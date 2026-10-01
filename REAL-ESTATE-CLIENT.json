@@ -1,0 +1,981 @@
+{
+  "name": "REAL-ESTATE-CLIENT",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "9eaffcd1-9faa-428d-8f51-c2e4724b4744",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -816,
+        16
+      ],
+      "id": "b0e63620-7aa5-4196-bf63-cb95f8015a33",
+      "name": "Webhook",
+      "webhookId": "9eaffcd1-9faa-428d-8f51-c2e4724b4744"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\n\nreturn {\n  name: body.name || 'Unknown',\n  email: body.email ? body.email.toLowerCase().trim() : '',\n  phone: body.phone ? body.phone.replace(/[^0-9+]/g, '') : '',\n  property_type: body.property_type || 'N/A',\n  location: body.location || 'N/A',\n  budget: Number(body.budget) || 0,\n  timeline: body.timeline || 'N/A',\n  received_at: new Date().toISOString()\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -672,
+        16
+      ],
+      "id": "90af3353-41df-441e-b8a3-b07cbaf92f22",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1swXkGvOiwEMS-DrNX-c4-TGwzrd3e7fu-6Rj3U8DjUg",
+          "mode": "list",
+          "cachedResultName": "Dubai_Real_Estate_Leads_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1swXkGvOiwEMS-DrNX-c4-TGwzrd3e7fu-6Rj3U8DjUg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1swXkGvOiwEMS-DrNX-c4-TGwzrd3e7fu-6Rj3U8DjUg/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Email",
+              "lookupValue": "={{ $json.email }}"
+            },
+            {
+              "lookupColumn": "Phone",
+              "lookupValue": "={{ $json.phone }}"
+            }
+          ]
+        },
+        "combineFilters": "OR",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -528,
+        16
+      ],
+      "id": "31a224cd-c558-467c-8ade-cb3c4729a7dc",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8oGhJ6EspWr89dAN",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a275d4ec-9d98-4e92-9199-ad305adc7109",
+              "leftValue": "={{ $json.row_number }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -384,
+        16
+      ],
+      "id": "b315594f-c24c-477a-858c-9cd0c9bc376d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.6-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.6-flash",
+          "cachedResultUrl": ""
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an AI lead qualification expert for Dubai real estate.\nEvaluate the following lead:\n\n- Name: {{ $('Code in JavaScript').item.json.name }}\n- Email: {{ $('Code in JavaScript').item.json.email }}\n- Phone: {{ $('Code in JavaScript').item.json.phone }}\n- Property Type: {{ $('Code in JavaScript').item.json.property_type }}\n- Location: {{ $('Code in JavaScript').item.json.location }}\n- Budget: {{ $('Code in JavaScript').item.json.budget }} AED\n- Timeline: {{ $('Code in JavaScript').item.json.timeline }}\n\nRules:\n1. Score from 0 to 100 based on budget size, location desirability, and urgency (<1 month is high intent).\n2. Categorize as:\n   - HOT: 80 to 100\n   - WARM: 50 to 79\n   - COLD: 0 to 49\n\nRespond ONLY in raw JSON format matching this exact schema (no markdown wrappers):\n{\n  \"score\": ,\n  \"category\": \"\",\n  \"reasoning\": \"<1 sentence justification>\"\n}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        32
+      ],
+      "id": "8beabc8d-c6ce-4aa4-a3ec-c11a7bad50df",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "DIjNEFq68Pbe5bec",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retrieve original lead fields from the first JavaScript node\nconst leadData = $('Code in JavaScript').item.json;\n\n// Parse Gemini's JSON text output\nconst rawText = $json.content.parts[0].text;\nconst cleanJson = JSON.parse(rawText.replace(/```json|```/g, '').trim());\n\n// Combine original lead details with Gemini scoring outputs\nreturn {\n  ...leadData,\n  score: cleanJson.score,\n  category: cleanJson.category,\n  reasoning: cleanJson.reasoning\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        32
+      ],
+      "id": "fd1b209a-5e58-4cf8-a48b-e74e57f28671",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "=HOT",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "4148453b-b459-4957-b0bf-7a054d8d70ba"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "HOT"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8a97af9c-e4b5-4304-920b-14e451a13688",
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "WARM",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "WARM"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3949ef7e-cc50-444f-989f-87e5bcdb253d",
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "COLD",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "COLD"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        304,
+        16
+      ],
+      "id": "1bb18835-e502-4930-b218-a89920853c52",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1swXkGvOiwEMS-DrNX-c4-TGwzrd3e7fu-6Rj3U8DjUg",
+          "mode": "list",
+          "cachedResultName": "Dubai_Real_Estate_Leads_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1swXkGvOiwEMS-DrNX-c4-TGwzrd3e7fu-6Rj3U8DjUg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1swXkGvOiwEMS-DrNX-c4-TGwzrd3e7fu-6Rj3U8DjUg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Lead ID": "={{ $json.id || Date.now() }}",
+            "Created At": "={{ $json.received_at }}",
+            "Name": "={{ $json.name }}",
+            "Email": "={{ $json.email }}",
+            "Phone": "={{ $json.phone }}",
+            "Preferred Location": "={{ $json.location }}",
+            "Property Type": "={{ $json.property_type }}",
+            "Budget": "={{ $json.budget }}",
+            "Timeline": "={{ $json.timeline }}",
+            "AI Score": "={{ $json.score }}",
+            "Category": "={{ $json.category }}",
+            "AI Reasoning": "={{ $json.reasoning }}",
+            "Is Duplicate": "no",
+            "Booking Status": "Pending Booking"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Lead ID",
+              "displayName": "Lead ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Property Type",
+              "displayName": "Property Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Preferred Location",
+              "displayName": "Preferred Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Budget",
+              "displayName": "Budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timeline",
+              "displayName": "Timeline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Score",
+              "displayName": "AI Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Reasoning",
+              "displayName": "AI Reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Is Duplicate",
+              "displayName": "Is Duplicate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Booking Status",
+              "displayName": "Booking Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        512,
+        -144
+      ],
+      "id": "e9156fb9-4654-4a5a-a856-c5675e69d437",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8oGhJ6EspWr89dAN",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0C4P0GL7GU",
+          "mode": "list",
+          "cachedResultName": "social"
+        },
+        "text": "==🚨 *NEW HOT LEAD RECEIVED*\n\n• *Name:* {{ $json['Name'] }}\n• *Phone:* {{ $json['Phone'] }}\n• *Email:* {{ $json['Email'] }}\n• *Property Type:* {{ $json['Property Type'] }}\n• *Location:* {{ $json['Preferred Location'] }}\n• *Budget:* {{ $json['Budget'] }} AED\n• *Timeline:* {{ $json['Timeline'] }}\n\n🔥 *AI Score:* {{ $json['AI Score'] }}/100\n💡 *AI Reasoning:* {{ $json['AI Reasoning'] }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        720,
+        -272
+      ],
+      "id": "e81a6a73-613d-4691-9e22-8fbac352df92",
+      "name": "Send a message",
+      "webhookId": "932c677d-13ff-4c2d-9d63-b325f9fa4bc1",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "ggFL1f0w3gINWHdn",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Email }}",
+        "subject": "=Private Consultation - Luxury Properties in {{ $json['Preferred Location'] }}",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Dubai Luxury Real Estate</title>\n</head>\n\n<body style=\"margin:0; padding:0; background-color:#f3f5f7; font-family:Arial, Helvetica, sans-serif; color:#1f2937;\">\n\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color:#f3f5f7; padding:30px 10px;\">\n    <tr>\n      <td align=\"center\">\n\n        <!-- Main Container -->\n        <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"\n          style=\"max-width:600px; width:100%; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 5px 20px rgba(0,0,0,0.08);\">\n\n          <!-- Header -->\n          <tr>\n            <td style=\"background:#111827; padding:30px 35px; text-align:center;\">\n\n              <div style=\"font-size:13px; letter-spacing:2px; color:#d4af37; font-weight:bold; margin-bottom:8px;\">\n                DUBAI LUXURY REAL ESTATE\n              </div>\n\n              <div style=\"font-size:28px; color:#ffffff; font-weight:bold;\">\n                Private Consultation\n              </div>\n\n              <div style=\"font-size:14px; color:#d1d5db; margin-top:8px;\">\n                Your property requirements have been received\n              </div>\n\n            </td>\n          </tr>\n\n          <!-- Greeting -->\n          <tr>\n            <td style=\"padding:32px 35px 20px 35px;\">\n\n              <div style=\"font-size:22px; font-weight:bold; color:#111827; margin-bottom:12px;\">\n                Dear {{ $json['Name'] }},\n              </div>\n\n              <div style=\"font-size:15px; line-height:1.7; color:#4b5563;\">\n                Thank you for inquiring about luxury real estate opportunities\n                in <strong style=\"color:#111827;\">{{ $json['Preferred Location'] }}</strong>.\n                Based on your profile and requirements, our senior advisory team\n                has prioritized your request for a private consultation.\n              </div>\n\n            </td>\n          </tr>\n\n          <!-- Lead Status -->\n          <tr>\n            <td style=\"padding:10px 35px 25px 35px;\">\n\n              <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"\n                style=\"background:#fff8e1; border:1px solid #f1d77a; border-radius:12px;\">\n\n                <tr>\n                  <td style=\"padding:18px 20px;\">\n\n                    <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">\n                      <tr>\n\n                        <td style=\"font-size:14px; color:#6b7280;\">\n                          AI Qualification\n                        </td>\n\n                        <td align=\"right\">\n                          <span style=\"display:inline-block; background:#dcfce7; color:#166534; padding:7px 14px; border-radius:20px; font-size:13px; font-weight:bold;\">\n                            {{ $json['Category'] }}\n                          </span>\n                        </td>\n\n                      </tr>\n                    </table>\n\n                    <div style=\"margin-top:15px;\">\n\n                      <span style=\"font-size:36px; font-weight:bold; color:#111827;\">\n                        {{ $json['AI Score'] }}\n                      </span>\n\n                      <span style=\"font-size:14px; color:#6b7280;\">\n                        / 100 Lead Score\n                      </span>\n\n                    </div>\n\n                  </td>\n                </tr>\n\n              </table>\n\n            </td>\n          </tr>\n\n          <!-- Inquiry Overview -->\n          <tr>\n            <td style=\"padding:0 35px 25px 35px;\">\n\n              <div style=\"font-size:18px; font-weight:bold; color:#111827; margin-bottom:15px;\">\n                Inquiry Overview\n              </div>\n\n              <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"\n                style=\"border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;\">\n\n                <!-- Location -->\n                <tr>\n                  <td style=\"padding:14px 16px; background:#f9fafb; color:#6b7280; font-size:14px; width:40%;\">\n                    📍 Preferred Location\n                  </td>\n\n                  <td style=\"padding:14px 16px; font-size:14px; font-weight:bold; color:#111827;\">\n                    {{ $json['Preferred Location'] }}\n                  </td>\n                </tr>\n\n                <!-- Property -->\n                <tr>\n                  <td style=\"padding:14px 16px; color:#6b7280; font-size:14px;\">\n                    🏠 Property Type\n                  </td>\n\n                  <td style=\"padding:14px 16px; font-size:14px; font-weight:bold; color:#111827;\">\n                    {{ $json['Property Type'] }}\n                  </td>\n                </tr>\n\n                <!-- Budget -->\n                <tr>\n                  <td style=\"padding:14px 16px; background:#f9fafb; color:#6b7280; font-size:14px;\">\n                    💰 Budget\n                  </td>\n\n                  <td style=\"padding:14px 16px; font-size:14px; font-weight:bold; color:#111827;\">\n                    AED {{ $json['Budget'] }}\n                  </td>\n                </tr>\n\n                <!-- Timeline -->\n                <tr>\n                  <td style=\"padding:14px 16px; color:#6b7280; font-size:14px;\">\n                    ⏱ Buying Timeline\n                  </td>\n\n                  <td style=\"padding:14px 16px; font-size:14px; font-weight:bold; color:#111827;\">\n                    {{ $json['Timeline'] }}\n                  </td>\n                </tr>\n\n              </table>\n\n            </td>\n          </tr>\n\n          <!-- AI Reasoning -->\n          <tr>\n            <td style=\"padding:0 35px 25px 35px;\">\n\n              <div style=\"font-size:18px; font-weight:bold; color:#111827; margin-bottom:12px;\">\n                AI Qualification Analysis\n              </div>\n\n              <div style=\"background:#f9fafb; border-left:4px solid #d4af37; padding:16px 18px; border-radius:8px; font-size:14px; line-height:1.7; color:#4b5563;\">\n\n                {{ $json['AI Reasoning'] }}\n\n              </div>\n\n            </td>\n          </tr>\n\n          <!-- CTA -->\n          <tr>\n            <td align=\"center\" style=\"padding:10px 35px 35px 35px;\">\n\n              <div style=\"font-size:15px; color:#4b5563; margin-bottom:18px;\">\n                Ready to explore suitable properties?\n              </div>\n\n              <a href=\"YOUR_GOOGLE_CALENDAR_BOOKING_LINK\"\n                style=\"display:inline-block; background:#111827; color:#ffffff; text-decoration:none; padding:14px 28px; border-radius:8px; font-size:14px; font-weight:bold;\">\n                Schedule Private Consultation →\n              </a>\n\n            </td>\n          </tr>\n\n          <!-- Footer -->\n          <tr>\n            <td style=\"background:#f9fafb; padding:22px 35px; text-align:center; border-top:1px solid #e5e7eb;\">\n\n              <div style=\"font-size:13px; color:#6b7280;\">\n                Dubai Luxury Real Estate\n              </div>\n\n              <div style=\"font-size:12px; color:#9ca3af; margin-top:6px;\">\n                Your trusted partner for premium Dubai properties\n              </div>\n\n            </td>\n          </tr>\n\n        </table>\n\n      </td>\n    </tr>\n  </table>\n\n</body>\n</html>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        688,
+        -96
+      ],
+      "id": "b06de0ee-200c-4d2f-ae9e-a99226d2dfd1",
+      "name": "Send a message1",
+      "webhookId": "8d1fe123-111b-4bff-80b9-6a967e68980e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "fIWkWDEmkStqdppX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1swXkGvOiwEMS-DrNX-c4-TGwzrd3e7fu-6Rj3U8DjUg",
+          "mode": "list",
+          "cachedResultName": "Dubai_Real_Estate_Leads_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1swXkGvOiwEMS-DrNX-c4-TGwzrd3e7fu-6Rj3U8DjUg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 362611240,
+          "mode": "list",
+          "cachedResultName": "warm",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1swXkGvOiwEMS-DrNX-c4-TGwzrd3e7fu-6Rj3U8DjUg/edit#gid=362611240"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Lead ID": "={{ $json.id || Date.now() }}",
+            "Name": "={{ $('Code in JavaScript1').item.json.name }}",
+            "Email": "={{ $('Code in JavaScript1').item.json.email }}",
+            "Phone": "={{ $('Code in JavaScript1').item.json.phone }}",
+            "Preferred Location": "={{ $('Code in JavaScript1').item.json.location }}",
+            "Budget": "={{ $('Code in JavaScript1').item.json.budget }}",
+            "AI Score": "={{ $('Code in JavaScript1').item.json.score }}",
+            "FollowUp Status": "Pending"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Lead ID",
+              "displayName": "Lead ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Preferred Location",
+              "displayName": "Preferred Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Budget",
+              "displayName": "Budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AI Score",
+              "displayName": "AI Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "FollowUp Status",
+              "displayName": "FollowUp Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        576,
+        32
+      ],
+      "id": "e03e8822-5e2f-4d32-9471-7f2467719d4a",
+      "name": "Append row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8oGhJ6EspWr89dAN",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Code in JavaScript1').item.json.email }}",
+        "subject": "Your Dubai Property Guide & Curated Portfolio",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Dubai Property Follow-up</title>\n</head>\n\n<body style=\"margin:0; padding:0; background-color:#f3f5f7; font-family:Arial, Helvetica, sans-serif; color:#1f2937;\">\n\n<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"\n       style=\"background-color:#f3f5f7; padding:30px 10px;\">\n\n<tr>\n<td align=\"center\">\n\n<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"\n       style=\"max-width:600px; width:100%; background:#ffffff; border-radius:16px; overflow:hidden;\">\n\n<!-- HEADER -->\n<tr>\n<td style=\"background:#111827; padding:30px 35px; text-align:center;\">\n\n<div style=\"font-size:13px; letter-spacing:2px; color:#d4af37; font-weight:bold;\">\nDUBAI LUXURY REAL ESTATE\n</div>\n\n<div style=\"font-size:26px; color:#ffffff; font-weight:bold; margin-top:8px;\">\nLet's Find Your Property\n</div>\n\n<div style=\"font-size:14px; color:#d1d5db; margin-top:8px;\">\nPersonalized property recommendations\n</div>\n\n</td>\n</tr>\n\n\n<!-- GREETING -->\n<tr>\n<td style=\"padding:32px 35px 20px 35px;\">\n\n<div style=\"font-size:22px; font-weight:bold; color:#111827; margin-bottom:12px;\">\nDear {{ $json['Name'] }},\n</div>\n\n<div style=\"font-size:15px; line-height:1.7; color:#4b5563;\">\n\nThank you for sharing your property requirements with us.\n\nBased on your preferences, we believe there may be several\nproperties in <strong style=\"color:#111827;\">\n{{ $json['Preferred Location'] }}\n</strong>\nthat could match what you're looking for.\n\n</div>\n\n</td>\n</tr>\n\n\n<!-- STATUS -->\n<tr>\n<td style=\"padding:10px 35px 25px 35px;\">\n\n<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"\nstyle=\"background:#fff8e1; border:1px solid #f1d77a; border-radius:12px;\">\n\n<tr>\n<td style=\"padding:18px 20px;\">\n\n<table width=\"100%\">\n<tr>\n\n<td style=\"font-size:14px; color:#6b7280;\">\nLead Status\n</td>\n\n<td align=\"right\">\n\n<span style=\"\ndisplay:inline-block;\nbackground:#fef3c7;\ncolor:#92400e;\npadding:7px 14px;\nborder-radius:20px;\nfont-size:13px;\nfont-weight:bold;\">\n{{ $json['Category'] }}\n</span>\n\n</td>\n\n</tr>\n</table>\n\n<div style=\"margin-top:15px;\">\n\n<span style=\"font-size:32px; font-weight:bold; color:#111827;\">\n{{ $json['AI Score'] }}\n</span>\n\n<span style=\"font-size:14px; color:#6b7280;\">\n/ 100 Lead Score\n</span>\n\n</div>\n\n</td>\n</tr>\n\n</table>\n\n</td>\n</tr>\n\n\n<!-- REQUIREMENTS -->\n<tr>\n<td style=\"padding:0 35px 25px 35px;\">\n\n<div style=\"font-size:18px; font-weight:bold; color:#111827; margin-bottom:15px;\">\nYour Property Requirements\n</div>\n\n<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"\nborder=\"0\"\nstyle=\"border:1px solid #e5e7eb; border-radius:12px;\">\n\n<tr>\n<td style=\"padding:14px 16px; background:#f9fafb; color:#6b7280; font-size:14px;\">\n📍 Preferred Location\n</td>\n\n<td style=\"padding:14px 16px; font-size:14px; font-weight:bold;\">\n{{ $json['Preferred Location'] }}\n</td>\n</tr>\n\n<tr>\n<td style=\"padding:14px 16px; color:#6b7280; font-size:14px;\">\n🏠 Property Type\n</td>\n\n<td style=\"padding:14px 16px; font-size:14px; font-weight:bold;\">\n{{ $json['Property Type'] }}\n</td>\n</tr>\n\n<tr>\n<td style=\"padding:14px 16px; background:#f9fafb; color:#6b7280; font-size:14px;\">\n💰 Budget\n</td>\n\n<td style=\"padding:14px 16px; font-size:14px; font-weight:bold;\">\nAED {{ $json['Budget'] }}\n</td>\n</tr>\n\n<tr>\n<td style=\"padding:14px 16px; color:#6b7280; font-size:14px;\">\n⏱ Buying Timeline\n</td>\n\n<td style=\"padding:14px 16px; font-size:14px; font-weight:bold;\">\n{{ $json['Timeline'] }}\n</td>\n</tr>\n\n</table>\n\n</td>\n</tr>\n\n\n<!-- FOLLOW UP -->\n<tr>\n<td style=\"padding:0 35px 25px 35px;\">\n\n<div style=\"\nbackground:#f9fafb;\nborder-left:4px solid #d4af37;\npadding:18px;\nborder-radius:8px;\nfont-size:14px;\nline-height:1.7;\ncolor:#4b5563;\">\n\nOur property specialists can help you explore options\nthat match your budget, preferred location, and property type.\n\n<strong style=\"color:#111827;\">\nWould you like us to send you some suitable properties?\n</strong>\n\n</div>\n\n</td>\n</tr>\n\n\n<!-- CTA -->\n<tr>\n<td align=\"center\" style=\"padding:5px 35px 35px 35px;\">\n\n<a href=\"YOUR_PROPERTY_LISTING_OR_BOOKING_LINK\"\nstyle=\"\ndisplay:inline-block;\nbackground:#111827;\ncolor:#ffffff;\ntext-decoration:none;\npadding:14px 30px;\nborder-radius:8px;\nfont-size:14px;\nfont-weight:bold;\">\n\nExplore Suitable Properties →\n\n</a>\n\n</td>\n</tr>\n\n\n<!-- FOOTER -->\n<tr>\n<td style=\"\nbackground:#f9fafb;\npadding:22px 35px;\ntext-align:center;\nborder-top:1px solid #e5e7eb;\">\n\n<div style=\"font-size:13px; color:#6b7280;\">\nDubai Luxury Real Estate\n</div>\n\n<div style=\"font-size:12px; color:#9ca3af; margin-top:6px;\">\nPersonalized property assistance in Dubai\n</div>\n\n</td>\n</tr>\n\n</table>\n\n</td>\n</tr>\n</table>\n\n</body>\n</html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        64
+      ],
+      "id": "cd5dcfe2-ca9a-4513-828b-fa76aba6c044",
+      "name": "Send a message2",
+      "webhookId": "96d6f034-f1f0-494d-baa9-f87135494d86",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "fIWkWDEmkStqdppX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1swXkGvOiwEMS-DrNX-c4-TGwzrd3e7fu-6Rj3U8DjUg",
+          "mode": "list",
+          "cachedResultName": "Dubai_Real_Estate_Leads_DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1swXkGvOiwEMS-DrNX-c4-TGwzrd3e7fu-6Rj3U8DjUg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 963058722,
+          "mode": "list",
+          "cachedResultName": "cold",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1swXkGvOiwEMS-DrNX-c4-TGwzrd3e7fu-6Rj3U8DjUg/edit#gid=963058722"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Lead ID": "={{ $json.id || Date.now() }}",
+            "Created At": "={{ $json.received_at }}",
+            "Name": "={{ $('Code in JavaScript1').item.json.name }}",
+            "Email": "={{ $('Code in JavaScript1').item.json.email }}",
+            "Phone": "={{ $('Code in JavaScript1').item.json.phone }}",
+            "Property Type": "={{ $('Code in JavaScript1').item.json.property_type }}",
+            "Preferred Location": "={{ $('Code in JavaScript1').item.json.location }}",
+            "Budget": "={{ $('Code in JavaScript1').item.json.budget }}",
+            "Timeline": "={{ $('Code in JavaScript1').item.json.timeline }}",
+            "AI Score": "={{ $('Code in JavaScript1').item.json.score }}",
+            "Category": "={{ $('Code in JavaScript1').item.json.category }}",
+            "AI Reasoning": "={{ $('Code in JavaScript1').item.json.reasoning }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Lead ID",
+              "displayName": "Lead ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Property Type",
+              "displayName": "Property Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Preferred Location",
+              "displayName": "Preferred Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Budget",
+              "displayName": "Budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timeline",
+              "displayName": "Timeline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Score",
+              "displayName": "AI Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Reasoning",
+              "displayName": "AI Reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        512,
+        160
+      ],
+      "id": "df7cd020-8329-43f5-8373-488953287930",
+      "name": "Append row in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8oGhJ6EspWr89dAN",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Code in JavaScript1').item.json.email }}",
+        "subject": "Dubai Real Estate Market Trends & Quarterly Overview",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Dubai Property Inquiry</title>\n</head>\n\n<body style=\"margin:0; padding:0; background-color:#f3f5f7; font-family:Arial, Helvetica, sans-serif; color:#1f2937;\">\n\n<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"\nstyle=\"background:#f3f5f7; padding:30px 10px;\">\n\n<tr>\n<td align=\"center\">\n\n<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"\nstyle=\"max-width:600px; width:100%; background:#ffffff; border-radius:16px; overflow:hidden;\">\n\n<!-- HEADER -->\n<tr>\n<td style=\"background:#111827; padding:30px 35px; text-align:center;\">\n\n<div style=\"font-size:13px; letter-spacing:2px; color:#d4af37; font-weight:bold;\">\nDUBAI LUXURY REAL ESTATE\n</div>\n\n<div style=\"font-size:26px; color:#ffffff; font-weight:bold; margin-top:8px;\">\nThank You For Your Inquiry\n</div>\n\n<div style=\"font-size:14px; color:#d1d5db; margin-top:8px;\">\nYour property requirements have been received\n</div>\n\n</td>\n</tr>\n\n\n<!-- GREETING -->\n<tr>\n<td style=\"padding:32px 35px 20px 35px;\">\n\n<div style=\"font-size:22px; font-weight:bold; color:#111827; margin-bottom:12px;\">\nDear {{ $json['Name'] }},\n</div>\n\n<div style=\"font-size:15px; line-height:1.7; color:#4b5563;\">\n\nThank you for your interest in Dubai real estate.\n\nWe have received your property requirements and saved\nyour inquiry with our team.\n\nWhen suitable opportunities become available based on\nyour preferences, we can provide you with relevant\nproperty information.\n\n</div>\n\n</td>\n</tr>\n\n\n<!-- REQUIREMENTS -->\n<tr>\n<td style=\"padding:10px 35px 25px 35px;\">\n\n<div style=\"font-size:18px; font-weight:bold; color:#111827; margin-bottom:15px;\">\nYour Requirements\n</div>\n\n<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"\nborder=\"0\"\nstyle=\"border:1px solid #e5e7eb; border-radius:12px;\">\n\n<tr>\n<td style=\"padding:14px 16px; background:#f9fafb; color:#6b7280; font-size:14px;\">\n📍 Preferred Location\n</td>\n\n<td style=\"padding:14px 16px; font-size:14px; font-weight:bold;\">\n{{ $json['Preferred Location'] }}\n</td>\n</tr>\n\n<tr>\n<td style=\"padding:14px 16px; color:#6b7280; font-size:14px;\">\n🏠 Property Type\n</td>\n\n<td style=\"padding:14px 16px; font-size:14px; font-weight:bold;\">\n{{ $json['Property Type'] }}\n</td>\n</tr>\n\n<tr>\n<td style=\"padding:14px 16px; background:#f9fafb; color:#6b7280; font-size:14px;\">\n💰 Budget\n</td>\n\n<td style=\"padding:14px 16px; font-size:14px; font-weight:bold;\">\nAED {{ $json['Budget'] }}\n</td>\n</tr>\n\n<tr>\n<td style=\"padding:14px 16px; color:#6b7280; font-size:14px;\">\n⏱ Buying Timeline\n</td>\n\n<td style=\"padding:14px 16px; font-size:14px; font-weight:bold;\">\n{{ $json['Timeline'] }}\n</td>\n</tr>\n\n</table>\n\n</td>\n</tr>\n\n\n<!-- MESSAGE -->\n<tr>\n<td style=\"padding:0 35px 30px 35px;\">\n\n<div style=\"\nbackground:#f9fafb;\nborder-left:4px solid #9ca3af;\npadding:18px;\nborder-radius:8px;\nfont-size:14px;\nline-height:1.7;\ncolor:#4b5563;\">\n\nYour inquiry has been successfully recorded.\n\nAs your property search develops, we can help you\nexplore opportunities that match your requirements.\n\n</div>\n\n</td>\n</tr>\n\n\n<!-- FOOTER -->\n<tr>\n<td style=\"\nbackground:#f9fafb;\npadding:22px 35px;\ntext-align:center;\nborder-top:1px solid #e5e7eb;\">\n\n<div style=\"font-size:13px; color:#6b7280;\">\nDubai Luxury Real Estate\n</div>\n\n<div style=\"font-size:12px; color:#9ca3af; margin-top:6px;\">\nThank you for considering us for your Dubai property search\n</div>\n\n</td>\n</tr>\n\n</table>\n\n</td>\n</tr>\n</table>\n\n</body>\n</html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        784,
+        208
+      ],
+      "id": "c732a85b-ac1d-44c6-830b-b6d53a83a924",
+      "name": "Send a message3",
+      "webhookId": "9188591f-b397-43ed-9930-efe41b784f19",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "fIWkWDEmkStqdppX",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append row in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet2": {
+      "main": [
+        [
+          {
+            "node": "Send a message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b47095a2-5cfe-481e-b1ab-ab0c75aaf2ea",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "63dbc57d37f71070ad14ba818fbab7155dd22de7f24bb0fd204bc8ffeb3d0b28"
+  },
+  "nodeGroups": [],
+  "id": "nylVZBizlbmMl4JS",
+  "tags": []
+}
